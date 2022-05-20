@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-skeleton
+  namespace: dexf
+  labels:
+    application: skeleton
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: skeleton
+      env: dev
+  template:
+    metadata:
+      labels:
+        application: skeleton
+        env: dev
+        PROMETHEUS_EXPORTER_JOB_NAME: skeleton-service
+        PROMETHEUS_EXPORTER_PORT: "8999"
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+      - name: github-pat
+      containers:
+      - name: dev-skeleton
+        imagePullPolicy: Always
+        image: nginx:latest
+        # image: ghcr.io/inter-ikea/cbf-re-ipex-dexf-artifacts/skeleton-service:220328-121142-cef7046df9b7ebc54318410096353a5b5f74ac5a
+        securityContext:
+          allowPrivilegeEscalation: false
+          # capabilities:
+          #   drop:
+          #     - NET_RAW
+          #     - "ALL"
+          # runAsUser: 10001
+          # runAsNonRoot: true
+        ports:
+          # - containerPort: 8099
+          - containerPort: 80
+            # hostPort: 8099
+            protocol: "TCP"
+        startupProbe:
+          httpGet:
+            # path: /skeleton/management/health
+            path: /
+            # port: 8999
+            port: 80
+          initialDelaySeconds: 155
+        livenessProbe:
+          httpGet:
+            # path: /skeleton/management/health
+            path: /
+            # port: 8999
+            port: 80
+          initialDelaySeconds: 5
+        readinessProbe:
+          httpGet:
+            # path: /skeleton/management/health
+            path: /
+            # port: 8999
+            port: 80
+          timeoutSeconds: 2
+        resources:
+          requests:
+            cpu: "1"
+            memory: "1G"
+          limits:
+            cpu: "2000m"
+            memory: "4000Mi"
+        # command: ["/usr/bin/java", "-Xms2048m", "-Xmx2048m", "-jar", "/opt/dexf/skeleton.jar"]
+        envFrom:
+          - configMapRef:
+              name: skeleton-container-env-values
+        # env:
+        # - name: SPRING_DATASOURCE_READ-WRITE_URL
+        #   value: "jdbc:mariadb:sequential://db_skeleton.internal.dexf-dev.red.cdtapps.com:3306/skeleton_db?useUnicode=yes&character_set_server=utf8mb4&usePipelineAuth=false"
